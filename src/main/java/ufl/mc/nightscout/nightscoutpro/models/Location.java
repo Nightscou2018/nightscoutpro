@@ -7,24 +7,27 @@ import java.util.Date;
 public class Location {
 	
 	private int userId;
-	private String Location;
+	private String longitude;
+	public String latitude;
 	private String date;
 	private String time;
 	
 	
-	public Location(int userId, String location, Date date) {
+	public Location(int userId, String longitude, String latitude, Date date) {
 		super();
 		this.userId = userId;
-		Location = location;
+		this.longitude = longitude;
+		this.latitude = latitude;
 		this.setDate(date);
 		this.setTime(date);
 		
 	}
 	
-	public Location(int userId, String location) {
+	public Location(int userId, String longitude,String latitude) {
 		super();
 		this.userId = userId;
-		Location = location;
+		this.longitude = longitude;
+		this.latitude = latitude;
 	}
 
 	public Location() {
@@ -37,11 +40,17 @@ public class Location {
 	public void setUserId(int userId) {
 		this.userId = userId;
 	}
-	public String getLocation() {
-		return Location;
+	public String getLongitude() {
+		return longitude;
 	}
-	public void setLocation(String location) {
-		Location = location;
+	public void setLongitude(String longitude) {
+		this.longitude = longitude;
+	}
+	public String getLatitude() {
+		return latitude;
+	}
+	public void setLatitude(String latitude) {
+		this.latitude = latitude;
 	}
 	public String getTime() {
 		return time;

@@ -446,13 +446,13 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 		if(list.size()>0){ System.out.println(list.size());
 			sql = QueryConstants.UPDATE_LOCATION;
 			
-			this.getJdbcTemplate().update(sql,new Object[]{location.getLocation(),
-					location.getDate(),location.getTime(),list.get(0)});
+			this.getJdbcTemplate().update(sql,new Object[]{location.getLongitude(),
+					location.getLatitude(),location.getDate(),location.getTime(),list.get(0)});
 		}else{
 			sql = QueryConstants.ADD_LOCATION;		
 		
-			this.getJdbcTemplate().update(sql,new Object[]{location.getUserId(),location.getLocation(),
-					location.getDate(),location.getTime()});
+			this.getJdbcTemplate().update(sql,new Object[]{location.getUserId(),location.getLongitude(),
+					location.getLatitude(),location.getDate(),location.getTime()});
 		}
 		
 	}
@@ -630,7 +630,8 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 		public Location mapRow(ResultSet resultSet, int rowNum) throws SQLException {
 			Location loc = new Location();
 			loc.setUserId(resultSet.getInt("user_id"));
-			loc.setLocation(resultSet.getString("last_seen_loc"));
+			loc.setLongitude(resultSet.getString("last_seen_loc_lon"));
+			loc.setLatitude(resultSet.getString("last_seen_loc_lat"));
 			loc.setDate(resultSet.getString("last_seen_date"));
 			loc.setTime(resultSet.getString("last_seen_time"));
 			return loc;
