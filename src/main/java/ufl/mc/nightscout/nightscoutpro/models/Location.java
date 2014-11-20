@@ -23,6 +23,16 @@ public class Location {
 		
 	}
 	
+	public Location(int userId, String longitude, String latitude, String date,
+			String time) {
+		super();
+		this.userId = userId;
+		this.longitude = longitude;
+		this.latitude = latitude;
+		this.date = date;
+		this.time = time;
+	}
+
 	public Location(int userId, String longitude,String latitude) {
 		super();
 		this.userId = userId;

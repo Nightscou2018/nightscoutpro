@@ -12,6 +12,9 @@ public class URI_Constants {
 	public static final String CHECK_USERNAME = "/{username}/checkUsername";
 	public static final String ADD_REGID = "userid/{userid}/regid/{regid}";
 	
+	public static final String ADD_UNIVERSAL = "addUniversalGuardian/{userid}";
+	public static final String REMOVE_UNIVERSAL = "removeUniversalGuardian/{userid}";
+	
 	public static final String SEND_INVITE = "ns/invite";
 	public static final String ACCEPT_INVITE = "ga/invite";
 	
@@ -27,4 +30,10 @@ public class URI_Constants {
 	public static final String NS_VERIFY = "ns/verify/{userid}";
 	
 	public static final String RECOVER_PASSWORD ="/{username}/forgot";
+	
+	public static final String UPDATE_PASSWORD = "updatePassword";
+	public static final String UPDATE_PROFILE = "updateProfile";
+	
+	public static final String EMERGENCY = "ns/emergency";
+	public static final String ACKNOWLEDGE = "ga/acknowledge";
 }

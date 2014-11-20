@@ -5,6 +5,7 @@ public class QueryConstants {
 	public static final String GET_USERID_EMAILID = "select user_id from users where email_id=?";
 	public static final String GET_USERID_USERNAME = "select user_id from users where user_name=?";
 	public static final String GET_PASSWORD = "select password from users where user_name=?";
+	public static final String GET_PROFILE = "select * from users where user_id=?";
 	public static final String GET_EMAILID_USERID = "select email_id from users where user_id=?";
 	public static final String GET_USERNAME_USERID = "select user_name from users where user_id=?";
 	public static final String GET_REGNID_USERID = "select ga_regId from users where user_id=?";
@@ -26,6 +27,12 @@ public class QueryConstants {
 			"(SELECT patient_id FROM patients_to_guardian WHERE guardian_id=?))";
 	public static final String GET_PATIENTLIST_UNREGISTERED = "select * from "
 			+ "unregistered_guardians where guardian_email=?";
+	public static final String GET_GUARDIANLIST_PATIENT = "select guardian_id from "
+			+ "guardians_for_patient where patient_id = ?";
+	public static final String GET_UNIVERSAL_GUARDIANLIST = "select user_id from user_type "
+			+ "where is_universal_guardian = 1";
+	public static final String GET_FAMILY_MEMBERS = "select guardian_id from patients_to_guardian "
+			+ "where patient_id = ? and access_type = 2";
 	
 	public static final String COUNT_UNREGISTERED_EMAILID = "select count(*) from "
 			+ "unregistered_guardians where guardian_email=?";	
@@ -76,4 +83,13 @@ public class QueryConstants {
 			+ "where user_id = ?";
 	public static final String REMOVE_UNVERIFIED  = "delete from unverified_patients "
 			+ "where patient_id=?";
+	public static final String UPDATE_UNIVERSAL_GUARDIAN_USER_TYPE = "update user_type SET is_universal_guardian = ? "
+			+ "where user_id = ?";
+	public static final String ADD_USER_TYPE =  "insert into user_type(user_id,is_patient,is_guardian," 
+			+ "is_universal_guardian,is_moderator) values(?,?,?,?,?)";
+	public static final String UPDATE_NS_USER_TYPE = "update user_type SET is_patient = ? where user_id = ?";
+	public static final String UPDATE_GA_USER_TYPE = "update user_type SET is_guardian = ? where user_id = ?";
+	public static final String UPDATE_PASSWORD = "update users SET password = ? where user_id = ?";
+	public static final String UPDATE_PROFILE = "update users SET email_id = ?, user_name = ?, "
+			+ "full_name = ?, phone_no = ?, address = ? where user_id = ?";
 }

@@ -4,8 +4,10 @@ package ufl.mc.nightscout.nightscoutpro.dao;
 
 import java.io.Serializable;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -24,19 +26,38 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 	
 	String message = null;
 	ClientResponse response = null;
-		
+	private List<Integer> goingGuardians;
+	private List<Integer> reachedGuardians;
+	
+	public void addGoing(int guardianId){
+		if(goingGuardians == null)
+			goingGuardians = new LinkedList<Integer>();
+		goingGuardians.add(guardianId);
+	}
+	
+	public void addReached(int guardianId){
+		if(reachedGuardians == null)
+			reachedGuardians = new LinkedList<Integer>();
+		reachedGuardians.add(guardianId);
+	}
+	
 	@Autowired
 	private MailSender mailSender;
 	
 	@Override
 	public String sample(sample samp) throws Exception {
 		System.out.println("came3");
-		String sql = QueryConstants.ADD_GLUCOSE;
-		//this.getJdbcTemplate().update(sql,new Object[]{samp.getPatientId(),samp.getGlucose(),
-			//	samp.getDate(),samp.getTime()});
+		List<Integer> list = new LinkedList();
+		list.add(23);
+		list.add(24);
+		String sql = "select ga_regId from users where user_id IN ?";
+		List<String> ans=this.getJdbcTemplate().queryForList(sql,
+				new Object[]{list},String.class);
 		//this.getJdbcTemplate().update(sql,new Object[]{samp.getPatientId(),samp.getGlucose()});
 		System.out.println("came4");
-		return sql;
+		System.out.println(ans.get(0));
+		System.out.println(ans.get(1));
+		return null;
 	}
 	
 	@Override
@@ -71,12 +92,13 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 					return new NSLoginResponse(200,message,getGuardianList(userId),userId);
 				
 				}else{
-					sql = QueryConstants.ADD_NS_USER;
-					
+					sql = QueryConstants.ADD_NS_USER;					
 					this.getJdbcTemplate().update(sql,new Object[]{userId,emailId});
-					sql = QueryConstants.ADD_UNVERIFIED;
 					
+					/* Set  is_patient to 1 in user_type for this user */
+					this.addNSUserType(userId);
 					
+					sql = QueryConstants.ADD_UNVERIFIED;					
 					this.getJdbcTemplate().update(sql,new Object[]{userId,new Date()});
 				
 					return new ClientResponse(200,"Hi! Welcome to nightscout app!");
@@ -170,10 +192,13 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 							sql = QueryConstants.GET_EMAILID_USERID;
 							String emailId = this.getJdbcTemplate().queryForObject
 									(sql, new Object[]{userId}, String.class);
-							
-							sql = QueryConstants.ADD_GA_USER;
-													
+						
+							sql = QueryConstants.ADD_GA_USER;													
 							this.getJdbcTemplate().update(sql,new Object[]{userId,emailId});
+							
+							/* Set  is_guardian to 1 in user_type for this user */
+							this.addGAUserType(userId);
+							
 							List<UnregisteredGuardian> list = getPatientListFromUnregisteredTable(emailId);
 							for(UnregisteredGuardian urg : list){
 								sql = QueryConstants.ADD_GUARD_4_PATIENT;
@@ -245,6 +270,9 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 		
 		this.getJdbcTemplate().update(sql,new Object[]{userId,user.getEmailId()});
 		
+		this.addUserType(userId);
+		this.addNSUserType(userId);
+		
 		sql = QueryConstants.ADD_UNVERIFIED;
 		
 		this.getJdbcTemplate().update(sql,new Object[]{userId,new Date()});
@@ -308,6 +336,9 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 		sql = QueryConstants.ADD_GA_USER;
 		
 		this.getJdbcTemplate().update(sql,new Object[]{userId,user.getEmailId()});
+		
+		this.addUserType(userId);
+		this.addGAUserType(userId);
 				
 		//Add code to remove all entries in unregistered table for that emailId
 		List<UnregisteredGuardian> list = getPatientListFromUnregisteredTable(user.getEmailId());
@@ -386,30 +417,29 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 		String sql = QueryConstants.GET_USERID_USERNAME;
 		List<Integer> userId = this.getJdbcTemplate().queryForList
 				(sql,new Object[]{username},Integer.class);
-		/*int userId = this.getJdbcTemplate().queryForObject
-				(sql, new Object[]{username}, Integer.class);*/
+		
 		if(userId.size() == 0){
 			return new ClientResponse(400,"Invalid username. Please register!");
 		}
 		sql = QueryConstants.GET_PASSWORD;
 		String encodedPassword = this.getJdbcTemplate().queryForObject
 				(sql, new Object[]{username}, String.class);
-		System.out.println(encodedPassword);
+		
 		sql = QueryConstants.GET_EMAILID_USERID;
 		String emailId = this.getJdbcTemplate().queryForObject
 				(sql, new Object[]{userId.get(0)}, String.class);
-		System.out.println(emailId);
+		
 		String decodedPassword = new String(
 				Base64.decodeBase64(encodedPassword));
 		
 		SimpleMailMessage mail = new SimpleMailMessage();
 		mail.setFrom("nightscoutpro@gmail.com");
-		System.out.println("hi");
+		
 		mail.setTo(emailId);
 		mail.setSubject("Password Recovery!");
 		mail.setText("Hi " + username + " your password is " + decodedPassword);
 		mailSender.send(mail);
-		System.out.println("hi1");
+		
 		message = "Your password has been sent to your registered email";
 		return new ClientResponse(200,message);
 	}
@@ -645,4 +675,283 @@ public class HomeDaoImpl extends NamedParameterJdbcDaoSupport implements HomeDao
 			
 		this.getJdbcTemplate().update(sql,new Object[]{regId,userId});
 	}
+
+	@Override
+	public ClientResponse addUniversalGuardian(int userId) throws Exception {
+		
+		String sql = QueryConstants.UPDATE_UNIVERSAL_GUARDIAN_USER_TYPE;
+		this.getJdbcTemplate().update(sql,new Object[]{1,userId});
+		return new ClientResponse(200,"You have successfully got added as universal guardian");
+	}
+	
+	@Override
+	public ClientResponse removeUniversalGuardian(int userId) throws Exception {
+		
+		String sql = QueryConstants.UPDATE_UNIVERSAL_GUARDIAN_USER_TYPE;
+		this.getJdbcTemplate().update(sql,new Object[]{0,userId});
+		return new ClientResponse(200,"You are no longer an universal guardian");
+	}
+	
+	@Override
+	public void addUserType(int userId) throws Exception {
+		
+		String sql = QueryConstants.ADD_USER_TYPE;
+		this.getJdbcTemplate().update(sql,new Object[]{userId,0,0,0,0});
+		
+	}
+	
+	@Override
+	public void addNSUserType(int userId) throws Exception {
+		
+		String sql = QueryConstants.UPDATE_NS_USER_TYPE;
+		this.getJdbcTemplate().update(sql,new Object[]{1,userId});
+		
+	}
+	
+	@Override
+	public void addGAUserType(int userId) throws Exception {
+		
+		String sql = QueryConstants.UPDATE_GA_USER_TYPE;
+		this.getJdbcTemplate().update(sql,new Object[]{1,userId});
+		
+	}
+
+	@Override
+	public ClientResponse updatePassword(User updatePasswordUser) throws Exception {
+		
+		String sql = QueryConstants.UPDATE_PASSWORD;		
+		this.getJdbcTemplate().update(sql,new Object[]{updatePasswordUser.getPassword(),updatePasswordUser.getUserId()});
+		return new ClientResponse(200,"Your password has successfully updated!");
+	}
+	
+	@Override
+	public ClientResponse updateProfile(User updateProfileUser) throws Exception {
+		
+		User user = updateProfileUser;			
+		String sql = QueryConstants.UPDATE_PROFILE;
+		this.getJdbcTemplate().update(sql,new Object[]{user.getEmailId(),user.getUserName(),
+				user.getFullName(),user.getPhoneNum(),user.getAddress(),user.getUserId()});
+		return new ClientResponse(200,"Your profile details has successfully updated!");
+	}
+
+	@Override
+	public ClientResponse emergency(Emergency emergency) throws Exception {
+		
+		/*	Get list of guardians who are nearer to emergency patient
+		 *  Get list of family members of emergency patient
+		 *  Push notify both the lists with patient info
+		 *  Run a while loop to check for acknowledged guardians for 10 mins
+		 *  Upon receiving first acknowledgment "GOING", Reset while loop for 10 mins
+		 *  If 5 acknowledgments "GOING" received, Push notify all other guardians "no need to go"
+		 *  	Push notify all the family members with GOING guardians details 
+		 *  After 5 mins, push notify all GOING guardians, "Did you reach?",
+		 *  		Reset while loop for 10 mins
+		 *  Upon receiving acknowledgment "REACHED", Push notify all GOING guardians "patient attended"
+		 *  Push notify all family members of emergency patient with REACHED guardian details
+		 *  Exit from loop and service call
+		 *  Otherwise(after finishing the loop), notify SOS. Reset new while loop for 10 mins
+		 *  If guardian acknowledges "REACHED", notify SOS and all family members of REACHED guardian details
+		 *  If SOS acknowledges, notify all GOING guardians 'patient attended' and family members of patient about SOS
+		 *  Otherwise, run loop for 15 mins and notify family members of guardian details about the situation
+		 *  
+		 *  While running in all above while loops, upon receiving "REACHED" acknowledgment,
+		 *  Push notify all family members of emergency patient with REACHED guardian details,
+		 *  Push notify all other GOING guardians "patient attended"
+		 *  Exit from loop and service call
+		 */
+		 Location loc = new Location(emergency.getUserId(),emergency.getLongitude(),
+				 emergency.getLatitude(),emergency.getDate(),emergency.getTime());
+		 this.addLocation(loc);
+		 Glucose glucose = new Glucose(emergency.getUserId(),emergency.getGlucose(),
+				 emergency.getDate(),emergency.getTime());
+		 this.addGlucose(glucose);
+		 
+		String sql = QueryConstants.GET_GUARDIANLIST_PATIENT;		
+		List<Integer> allGuardians = this.getJdbcTemplate().queryForList(sql,
+				new Object[]{emergency.getUserId()},Integer.class);
+		
+		sql = QueryConstants.GET_UNIVERSAL_GUARDIANLIST;
+		List<Integer> universalGuardians = this.getJdbcTemplate().queryForList(sql,Integer.class);
+		
+		/* Add all universal guardians who are not guardians to patient to list of all guardians */
+		/*for(int guardianId: universalGuardians)
+			if(! allGuardians.contains(guardianId))
+				allGuardians.add(guardianId);*/
+		allGuardians.addAll(universalGuardians);
+		/* Get the list of nearest guardians to the patient */
+		for(int guardianId: allGuardians){
+			/* Get the location of each guardian within a specific time range
+			 * Calculate distance of guardian from patient
+			 * If it is greater than a particular distance, remove him from the list 
+			 */
+			Location loc1 = this.getLocation(guardianId);
+			
+			if(Distance.HaversineInKM(loc1.getLatitude(), loc1.getLongitude(),
+					emergency.getLatitude(),emergency.getLongitude()) < 3){ //Remove guardians more than 3kms away
+				if(loc1.getDate() == emergency.getDate() ){//Remove guardians whose last seen location is not on same day
+					SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
+					Date d1 = format.parse(loc1.getTime());
+					Date d2 = format.parse(emergency.getTime());
+					long diff = (d2.getTime() - d1.getTime())/1000;
+					if(Math.abs(diff) > 3600) //Remove guardians whose last see time is more than 1 hr away
+						allGuardians.remove(guardianId);
+				}else{	
+					allGuardians.remove(guardianId);
+				}
+			}else{
+				allGuardians.remove(guardianId);
+			}
+		}
+		/* If nearest guardian list is empty, then notify SOS */
+		/* Get the Registration_Id list of all nearest Guardians */
+		List<String> regIdAllGuardians = this.getRegId(allGuardians);
+		
+		/* Get the list of family members of the patient */
+		sql = QueryConstants.GET_FAMILY_MEMBERS;
+		List<Integer> familyMembers = this.getJdbcTemplate().queryForList(sql,Integer.class);
+		/* Get the Registration_Id list of all family members */
+		List<String> regIdFamilyMembers = this.getRegId(familyMembers);
+		
+		EmergencyContent ec = new EmergencyContent();/* Object that stores regId and data to push*/
+		EmergencyInfo patientInfo = this.getEmergencyInfo(emergency.getUserId());
+		
+		/* Notify all nearest Guardians in specific time range */
+		ec.setRegistration_ids(regIdAllGuardians); /* Registration Ids of all Guardians*/
+		ec.createData("patient Emergency Info", patientInfo); /* Emergency Info of patient  */
+		Post2Gcm.post(ec); /* Post to GCM */
+		
+		/* Notify all family Members */
+		ec.setRegistration_ids(regIdFamilyMembers); /* Registration Ids of all Guardians*/
+		 /* Emergency Info of patient is already set to ec */
+		Post2Gcm.post(ec); /* Post to GCM */
+		
+		int firstGuyCame = 0, allGuardiansNotified = 0, askGoingGuardians = 0;
+		long stop,stop1 = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+		List<String> regIdGoingGuardians;
+		for(stop=System.nanoTime()+TimeUnit.SECONDS.toNanos(10);stop>System.nanoTime();){
+			if((firstGuyCame == 0) && goingGuardians.size() > 0){
+				firstGuyCame = 1;
+				stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);	
+				stop1 = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+			}
+			if(reachedGuardians.size() > 0){
+				/* Push notify all family members with reached Guardian details */
+				ec = new EmergencyContent();
+				ec.setRegistration_ids(regIdFamilyMembers);
+				EmergencyInfo guardianInfo = this.getEmergencyInfo(reachedGuardians.get(0));
+				ec.createData("Reached Guardian Info", guardianInfo);
+				Post2Gcm.post(ec);
+				/* Push notify all guardians 'no need to go' */
+				if(goingGuardians.size() > 5 ){ /* notify Going guardians 'patient attended' */
+					/* Reached acknowledgment received after 5 GOING acknowledgments received */
+					/* By this time, all other guardians were notified 'no need to go' */
+					goingGuardians.remove(reachedGuardians.get(0));
+					regIdGoingGuardians = this.getRegId(goingGuardians);
+					Content content = new Content();
+					content.setRegistration_ids(regIdGoingGuardians);
+					content.createData("msg", "Patient attended by another guardian. Thanks!");
+					Post2Gcm.post(content);
+					
+				}else{ /* notify all guardians 'no need to go' */
+					/* Reached acknowledgment received before 5 GOING acknowledgments received */
+					
+					allGuardians.remove(reachedGuardians.get(0)); /*All guardians except reached guardian*/
+					regIdAllGuardians = this.getRegId(allGuardians);
+					Content content = new Content();
+					content.setRegistration_ids(regIdAllGuardians);
+					content.createData("msg", "no need to go! Patient is safe");
+					Post2Gcm.post(content);
+				}
+				return null;
+			}
+			/* Notify all guardians after 5 GOING acknowledgments received */
+			if((allGuardiansNotified == 0) && goingGuardians.size() > 5){
+				
+				allGuardiansNotified = 1;
+				/* Remove all Going Guardians from All Guardians */
+				allGuardians.removeAll(goingGuardians);
+				regIdAllGuardians = this.getRegId(allGuardians);
+				Content content = new Content();
+				content.setRegistration_ids(regIdAllGuardians);
+				content.createData("msg", "no need to go! Patient is safe");
+				Post2Gcm.post(content);
+				
+				/* Notify all family members with the details of GOING guardians */
+				ec = new EmergencyContent();
+				ec.setRegistration_ids(regIdFamilyMembers);
+				for(int guardianId : goingGuardians)
+					ec.createData("Going Guardian Info", this.getEmergencyInfo(guardianId));
+				Post2Gcm.post(ec);
+			}
+			/* After 5 mins of arrival of first GOING acknowledgment, ask guardians 'did they reach?' */
+			if((askGoingGuardians == 0) && stop1 < System.nanoTime()){
+				askGoingGuardians = 1;
+				regIdGoingGuardians = this.getRegId(goingGuardians);
+				Content content = new Content();
+				content.setRegistration_ids(regIdGoingGuardians);
+				content.createData("msg", "Did you reach patient?");
+				Post2Gcm.post(content);
+				/* To reset loop for 10 more mins upon asking the above qn */
+				// stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+			}			
+		}
+		
+		
+		/* Notify SOS as no 'REACHED' acknowledgment received after 10 mins of arrival of first 'GOING' acknowledgment */
+		/* or Notify SOS upon no acknowledgment received after 10 mins of emergency notification sent */
+		
+		/*
+		 * 
+		 *  CODE TO NOTIFY SOS
+		 * 
+		 * 
+		 */
+		
+		return null;
+	}
+	
+	public EmergencyInfo getEmergencyInfo(int userId) throws Exception{
+		
+		EmergencyInfo patientInfo = new EmergencyInfo();
+		String sql = "select full_name from users where user_id = ?";
+		patientInfo.setFullName(this.getJdbcTemplate().queryForObject(sql, 
+				new Object[]{userId},String.class));
+		sql = "select phone_no from users where user_id = ?";
+		patientInfo.setPhoneNum(this.getJdbcTemplate().queryForObject(sql, 
+				new Object[]{userId},Long.class));
+		Location loc = this.getLocation(userId);
+		/* Calculate current address of the patient based on the current location using google map api
+		 */
+		String latlang = loc.getLatitude()+","+loc.getLongitude();
+		GoogleResponse response = GoogleAddress.convertFromLatLong(latlang);
+		 String address = response.getResults()[0].getFormatted_address();
+		 patientInfo.setAddress(address);
+		
+		return patientInfo;
+	}
+	public List<String> getRegId(List<Integer> listUserId){
+		
+		List<String> listRegId = new LinkedList();
+		String sql;
+		
+		for(int userId : listUserId){
+			sql = QueryConstants.GET_REGNID_USERID;
+			listRegId.add(this.getJdbcTemplate().queryForObject(sql,
+					new Object[]{userId},String.class));
+		}
+		
+		return listRegId;
+	}
+	@Override
+	public void acknowledge(Acknowledge ack) throws Exception {
+		
+		if(ack.getAck() == "GOING"){
+			this.addGoing(ack.getGuardianId());
+		}
+		if(ack.getAck() == "REACHED"){
+			this.addReached(ack.getGuardianId());
+		}
+	}
+	
+	
 }

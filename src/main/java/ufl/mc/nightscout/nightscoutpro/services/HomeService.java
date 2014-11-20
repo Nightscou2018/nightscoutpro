@@ -25,5 +25,11 @@ public interface HomeService {
 	public Location getLocation(int userId) throws Exception;
 	public void addRegId(int userId, int regId) throws Exception;
 	public String sample(String sampJson) throws Exception;
+	public ClientResponse addUniversalGuardian(int userId) throws Exception;
+	public ClientResponse removeUniversalGuardian(int userId) throws Exception;
+	public ClientResponse updatePassword(String updatePasswordJson) throws Exception;
+	public ClientResponse updateProfile(String updateProfileJson) throws Exception;
+	public ClientResponse emergency(String emergencyJson) throws Exception;
+	public void acknowledge(String ackJson) throws Exception;
 	
 }

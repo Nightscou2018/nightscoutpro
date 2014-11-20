@@ -2,14 +2,14 @@ package ufl.mc.nightscout.nightscoutpro.models;
 
 public class User {
 	
-	private int id;
+	private int userId;
 	private String emailId;
 	private String userName;
 	private String fullName;
 	private String password;
 	private long phoneNum;
 	private String address;
-	
+	private String regId;
 	
 	public User(String userName, String password) {
 		super();
@@ -26,14 +26,34 @@ public class User {
 		this.phoneNum = phoneNum;
 		this.address = address;
 	}
+	public User(int userId, String emailId, String userName, String fullName,
+			String password, long phoneNum, String address, String regId) {
+		super();
+		this.userId = userId;
+		this.emailId = emailId;
+		this.userName = userName;
+		this.fullName = fullName;
+		this.password = password;
+		this.phoneNum = phoneNum;
+		this.address = address;
+		this.regId = regId;
+	}
+	
 	public User() {
 		
 	}
-	public int getId() {
-		return id;
+	
+	public String getRegId() {
+		return regId;
 	}
-	public void setId(int id) {
-		this.id = id;
+	public void setRegId(String regId) {
+		this.regId = regId;
+	}
+	public int getUserId() {
+		return userId;
+	}
+	public void setUserId(int userId) {
+		this.userId = userId;
 	}
 	public String getEmailId() {
 		return emailId;

@@ -25,5 +25,14 @@ public interface HomeDao {
 	public Location getLocation(int userId) throws Exception;
 	public void addRegId(int userId, int regId) throws Exception;
 	public String sample(sample samp) throws Exception;
+	public ClientResponse addUniversalGuardian(int userId) throws Exception;
+	public ClientResponse removeUniversalGuardian(int userId) throws Exception;
+	public void addUserType(int userId) throws Exception;
+	public void addNSUserType(int userId) throws Exception;
+	public void addGAUserType(int userId) throws Exception;
+	public ClientResponse updatePassword(User updatePasswordUser)throws Exception;
+	public ClientResponse updateProfile(User updateProfileUser) throws Exception;
+	public ClientResponse emergency(Emergency emergency) throws Exception;
+	public void acknowledge(Acknowledge acknowledge) throws Exception;
 	
 }

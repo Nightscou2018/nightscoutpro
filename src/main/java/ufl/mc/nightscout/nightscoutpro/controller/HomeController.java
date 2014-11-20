@@ -166,5 +166,45 @@ public class HomeController {
 			@PathVariable("userid") int userId, @PathVariable("regid") int regId) throws Exception {
 		 homeService.addRegId(userId,regId);
 	}
+	
+	@RequestMapping(value = URI_Constants.ADD_UNIVERSAL, method = RequestMethod.GET)
+	public @ResponseBody ClientResponse addUniversalGuardian(
+			@PathVariable("userid") int userId) throws Exception {
+		return homeService.addUniversalGuardian(userId);
+	}
+	
+	@RequestMapping(value = URI_Constants.REMOVE_UNIVERSAL, method = RequestMethod.GET)
+	public @ResponseBody ClientResponse removeUniversalGuardian(
+			@PathVariable("userid") int userId) throws Exception {
+		return homeService.removeUniversalGuardian(userId);
+	}
+	
+	@RequestMapping(value=URI_Constants.UPDATE_PASSWORD, method = RequestMethod.POST)
+	public @ResponseBody ClientResponse updatePassword(HttpServletRequest request,
+			HttpServletResponse response, @RequestBody String updatePasswordJson) throws Exception{
+		
+		return homeService.updatePassword(updatePasswordJson);
+	}
+	
+	@RequestMapping(value=URI_Constants.UPDATE_PROFILE, method = RequestMethod.POST)
+	public @ResponseBody ClientResponse updateProfile(HttpServletRequest request,
+			HttpServletResponse response, @RequestBody String updateProfileJson) throws Exception{
+		
+		return homeService.updateProfile(updateProfileJson);
+	}
+	
+	@RequestMapping(value=URI_Constants.EMERGENCY, method = RequestMethod.POST)
+	public @ResponseBody ClientResponse emergency(HttpServletRequest request,
+			HttpServletResponse response, @RequestBody String emergencyJson) throws Exception{
+		
+		return homeService.emergency(emergencyJson);
+	}
+	
+	@RequestMapping(value=URI_Constants.ACKNOWLEDGE, method = RequestMethod.POST)
+	public @ResponseBody void acknowledge(HttpServletRequest request,
+			HttpServletResponse response, @RequestBody String ackJson) throws Exception{
+		
+		 homeService.acknowledge(ackJson);
+	}
 }
 

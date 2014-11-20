@@ -163,5 +163,50 @@ public class HomeServiceImpl implements HomeService {
 		
 	}
 
+	@Override
+	public ClientResponse addUniversalGuardian(int userId) throws Exception {
+		
+		return homeDao.addUniversalGuardian(userId);
+	}
+	
+	@Override
+	public ClientResponse removeUniversalGuardian(int userId) throws Exception {
+		
+		return homeDao.removeUniversalGuardian(userId);
+	}
 
+	@Override
+	public ClientResponse updatePassword(String updatePasswordJson)
+			throws Exception {
+		Gson gson = new Gson();
+		User updatePasswordUser = gson.fromJson(updatePasswordJson, User.class);
+		return homeDao.updatePassword(updatePasswordUser);
+	}
+	
+	@Override
+	public ClientResponse updateProfile(String updateProfileJson)
+			throws Exception {
+		Gson gson = new Gson();
+		User updateProfileUser = gson.fromJson(updateProfileJson, User.class);
+
+		return homeDao.updateProfile(updateProfileUser);
+	}
+
+	@Override
+	public ClientResponse emergency(String emergencyJson) throws Exception {
+		
+		Gson gson = new Gson();
+		Emergency emergency = gson.fromJson(emergencyJson, Emergency.class);
+
+		return homeDao.emergency(emergency);
+	}
+
+	@Override
+	public void acknowledge(String ackJson) throws Exception {
+
+		Gson gson = new Gson();
+		Acknowledge acknowledge = gson.fromJson(ackJson, Acknowledge.class);
+
+		homeDao.acknowledge(acknowledge);
+	}
 }
